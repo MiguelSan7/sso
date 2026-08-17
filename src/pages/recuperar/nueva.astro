@@ -1,0 +1,85 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { proxyApiRequest } from '../../lib/api';
+
+const token = Astro.url.searchParams.get('token') || '';
+let error: string | null = null;
+let codigo: string | null = null;
+
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const tokenPost = formData.get('token')?.toString() || '';
+    const password = formData.get('password')?.toString() || '';
+    const password2 = formData.get('password2')?.toString() || '';
+
+    const res = await proxyApiRequest('/interno/recuperar/confirmar', 'POST', {
+      token: tokenPost,
+      password,
+      password2,
+    });
+
+    if (res.ok) {
+      return Astro.redirect('/login');
+    } else {
+      error = res.data?.message || 'Error al cambiar la contraseña.';
+      codigo = res.data?.codigo || 'ERR-AUTH-400';
+    }
+  } catch (err: any) {
+    error = err.message || 'Error en la solicitud.';
+  }
+}
+---
+
+<Layout title="Crea una nueva contraseña">
+  <div class="sso-header">
+    <h1 class="sso-title">Crea una nueva contraseña</h1>
+  </div>
+
+  {error && (
+    <div class="alert-error">
+      <span>{error}</span>
+      {codigo && <small>{codigo}</small>}
+    </div>
+  )}
+
+  <form method="POST">
+    <input type="hidden" name="token" value={token} />
+
+    <div class="form-group">
+      <label for="password" class="form-label">Nueva contraseña</label>
+      <input
+        id="password"
+        name="password"
+        type="password"
+        class="form-input"
+        required
+        minlength="8"
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="password2" class="form-label">Confirmar contraseña</label>
+      <input
+        id="password2"
+        name="password2"
+        type="password"
+        class="form-input"
+        required
+        minlength="8"
+      />
+    </div>
+
+    <div style="margin: 16px 0 20px; font-size: 13px; color: var(--c-gris-medio);">
+      <strong>Requisitos:</strong>
+      <ul style="margin-left: 20px; margin-top: 4px;">
+        <li>Mínimo 8 caracteres</li>
+        <li>Mayúscula, número y símbolo</li>
+      </ul>
+    </div>
+
+    <button type="submit" class="btn-terracota">
+      Guardar contraseña
+    </button>
+  </form>
+</Layout>

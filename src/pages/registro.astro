@@ -1,0 +1,147 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { proxyApiRequest } from '../lib/api';
+
+const token = Astro.url.searchParams.get('token') || '';
+let error: string | null = null;
+let codigo: string | null = null;
+let nombre = 'Juan Pérez';
+let correo = 'juan@correo.com';
+
+if (token) {
+  try {
+    const res = await proxyApiRequest(`/interno/registro?token=${encodeURIComponent(token)}`);
+    if (res.ok && res.data) {
+      if (res.data.nombre) nombre = res.data.nombre;
+      if (res.data.correo) correo = res.data.correo;
+    }
+  } catch {}
+}
+
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const tokenPost = formData.get('token')?.toString() || '';
+    const password = formData.get('password')?.toString() || '';
+    const clabe = formData.get('clabe')?.toString() || '';
+    const titular = formData.get('titular')?.toString() || '';
+    const privacidad = formData.get('privacidad')?.toString() === '1';
+
+    const res = await proxyApiRequest('/interno/registro', 'POST', {
+      token: tokenPost,
+      password,
+      password2: password,
+      clabe,
+      banco: 'Banco Registrado',
+      titular,
+      privacidad: privacidad ? '1' : '0',
+    });
+
+    if (res.ok) {
+      return Astro.redirect('/login');
+    } else {
+      error = res.data?.message || 'Error al completar el registro.';
+      codigo = res.data?.codigo || 'ERR-AUTH-400';
+    }
+  } catch (err: any) {
+    error = err.message || 'Error en el servidor';
+    codigo = 'ERR-AUTH-500';
+  }
+}
+---
+
+<Layout title="Completar Registro">
+  <div class="sso-header">
+    <h1 class="sso-title">Completa tu registro</h1>
+    <p class="sso-subtitle">Invitación del Capitán</p>
+  </div>
+
+  {error && (
+    <div class="alert-error">
+      <span>{error}</span>
+      {codigo && <small>{codigo}</small>}
+    </div>
+  )}
+
+  <form method="POST">
+    <input type="hidden" name="token" value={token} />
+
+    <div class="form-group">
+      <label class="form-label">Nombre</label>
+      <input type="text" class="form-input" value={nombre} disabled style="background: var(--c-blanco-roto);" />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Correo</label>
+      <input type="email" class="form-input" value={correo} disabled style="background: var(--c-blanco-roto);" />
+    </div>
+
+    <div class="form-group">
+      <label for="password" class="form-label">Crear contraseña</label>
+      <input
+        id="password"
+        name="password"
+        type="password"
+        class="form-input"
+        required
+        minlength="8"
+      />
+      <small style="display: block; margin-top: 4px; color: var(--c-gris-medio); font-size: 12px;">
+        Mín. 8 car., 1 mayúscula, 1 número y 1 símbolo
+      </small>
+    </div>
+
+    <div style="margin: 24px 0 16px;">
+      <h3 style="font-size: 12px; font-weight: 700; letter-spacing: 0.05em; color: var(--c-gris-medio); text-transform: uppercase;">
+        DATOS BANCARIOS · PARA TU PAGO
+      </h3>
+    </div>
+
+    <div class="form-group">
+      <label for="clabe" class="form-label">CLABE interbancaria</label>
+      <input
+        id="clabe"
+        name="clabe"
+        type="text"
+        class="form-input"
+        inputmode="numeric"
+        pattern="[0-9]{18}"
+        maxlength="18"
+        required
+      />
+      <small style="display: block; margin-top: 4px; color: var(--c-gris-medio); font-size: 12px;">
+        18 dígitos · se valida el formato
+      </small>
+    </div>
+
+    <div class="form-group">
+      <label for="titular" class="form-label">Titular de la cuenta</label>
+      <input
+        id="titular"
+        name="titular"
+        type="text"
+        class="form-input"
+        required
+        maxlength="50"
+      />
+    </div>
+
+    <div class="form-group" style="display: flex; align-items: flex-start; gap: 8px; margin-top: 16px;">
+      <input
+        type="checkbox"
+        id="privacidad"
+        name="privacidad"
+        value="1"
+        required
+        style="margin-top: 4px; accent-color: var(--c-accion-principal);"
+      />
+      <label for="privacidad" style="font-size: 14px; cursor: pointer; color: var(--c-oscuro-primario);">
+        Acepto el aviso de privacidad
+      </label>
+    </div>
+
+    <button type="submit" class="btn-terracota">
+      Crear mi cuenta
+    </button>
+  </form>
+</Layout>

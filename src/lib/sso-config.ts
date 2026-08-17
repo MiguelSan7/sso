@@ -1,0 +1,36 @@
+/**
+ * Configuración y tipos del Proveedor SSO Gobernado
+ */
+
+export interface ClienteRegistrado {
+  clientId: string;
+  nombre: string;
+  redirectUris: string[];
+  postLogoutRedirectUris: string[];
+  scopes: string[];
+  tipo: 'web' | 'movil';
+  activo: boolean;
+}
+
+export const CLIENTES: Record<string, ClienteRegistrado> = {
+  'sgeb-web-panel': {
+    clientId: 'sgeb-web-panel',
+    nombre: 'Panel del Capitán y Administración',
+    redirectUris: ['https://sgeb.mediocres.mx/callback', 'http://localhost:5173/callback'],
+    postLogoutRedirectUris: ['https://sgeb.mediocres.mx/', 'http://localhost:5173/'],
+    scopes: ['openid', 'perfil', 'sgeb.api'],
+    tipo: 'web',
+    activo: true,
+  },
+  'sgeb-ios-mesero': {
+    clientId: 'sgeb-ios-mesero',
+    nombre: 'App iOS del Mesero',
+    redirectUris: ['mx.mediocres.sgeb://callback'],
+    postLogoutRedirectUris: ['mx.mediocres.sgeb://logout'],
+    scopes: ['openid', 'perfil', 'sgeb.api'],
+    tipo: 'movil',
+    activo: true,
+  },
+};
+
+export const BACKEND_API_URL = process.env.BACKEND_API_URL || 'http://localhost:3333';

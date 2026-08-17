@@ -1,0 +1,115 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { proxyApiRequest } from '../lib/api';
+
+const ticket = Astro.url.searchParams.get('ticket') || '';
+let error: string | null = null;
+let codigo: string | null = null;
+let correoVal = '';
+
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const ticketPost = formData.get('ticket')?.toString() || '';
+    const correo = formData.get('correo')?.toString() || '';
+    const password = formData.get('password')?.toString() || '';
+    correoVal = correo;
+
+    // Enviar x-www-form-urlencoded tal como lo espera AdonisJS InternoController.login
+    const res = await proxyApiRequest(
+      '/interno/login',
+      'POST',
+      { ticket: ticketPost, correo, password },
+      { 
+        'Content-Type': 'application/x-www-form-urlencoded',
+        cookie: Astro.request.headers.get('cookie') || '' 
+      }
+    );
+
+    // Propagar cookies recibidas de AdonisJS al navegador (e.g., sso_session, sgeb_dispositivo)
+    if (res.headers.setCookie) {
+      Astro.response.headers.set('Set-Cookie', res.headers.setCookie);
+    }
+
+    if (res.ok) {
+      // 1. Si requiere 2FA (pantallaVerificacion)
+      if (typeof res.data === 'string' && (res.data.includes('verificacion') || res.data.includes('Código'))) {
+        return Astro.redirect(`/verificacion?ticket=${encodeURIComponent(ticketPost)}&correo=${encodeURIComponent(correo)}`);
+      }
+      
+      // 2. Si el backend emitió la redirección final al cliente (con code y state)
+      if (res.headers.location) {
+        return Astro.redirect(res.headers.location);
+      }
+    } else {
+      error = typeof res.data === 'object' ? (res.data?.message || res.data?.error) : 'Correo o contraseña incorrectos';
+      codigo = typeof res.data === 'object' ? (res.data?.codigo || res.data?.sso_code) : 'ERR-AUTH-401';
+    }
+  } catch (err: any) {
+    error = err.message || 'Error de autenticación';
+    codigo = 'ERR-AUTH-500';
+  }
+}
+---
+
+<Layout title="Iniciar Sesión">
+  <div class="sso-header">
+    <h1 class="sso-title">Iniciar sesión</h1>
+    <p class="sso-subtitle">Sistema de Gestión de Eventos</p>
+  </div>
+
+  {error && (
+    <div class="alert-error">
+      <span>{error}</span>
+      {codigo && <small>{codigo}</small>}
+    </div>
+  )}
+
+  <form method="POST">
+    <input type="hidden" name="ticket" value={ticket} />
+
+    <div class="form-group">
+      <label for="correo" class="form-label">Correo</label>
+      <input
+        id="correo"
+        name="correo"
+        type="email"
+        class="form-input"
+        autocomplete="username"
+        required
+        autofocus
+        value={correoVal}
+        placeholder="usuario@correo.com"
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="password" class="form-label">Contraseña</label>
+      <input
+        id="password"
+        name="password"
+        type="password"
+        class="form-input"
+        autocomplete="current-password"
+        required
+      />
+    </div>
+
+    <div class="form-group" style="display: flex; justify-content: space-between; align-items: center; font-size: 14px; margin-top: 16px;">
+      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--c-oscuro-primario);">
+        <input type="checkbox" name="remember" value="1" style="accent-color: var(--c-accion-principal);" />
+        <span>Recordar este equipo</span>
+      </label>
+    </div>
+
+    <button type="submit" class="btn-terracota">
+      Entrar
+    </button>
+  </form>
+
+  <div class="sso-footer">
+    <a href={`/recuperar?ticket=${encodeURIComponent(ticket)}`}>
+      ¿Olvidaste tu contraseña?
+    </a>
+  </div>
+</Layout>
