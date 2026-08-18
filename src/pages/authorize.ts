@@ -36,9 +36,14 @@ export const GET: APIRoute = async ({ request, redirect, cookies }) => {
 
   // Si el backend responde con redirección (302) o error
   if (backendRes.status === 302 || backendRes.status === 301) {
-    // Si backend redirige a callback con code (Single Sign-On concedido)
-    const targetLocation = (backendRes.data as any)?.headers?.location;
+    const targetLocation = backendRes.headers?.location;
     if (targetLocation) {
+      if (targetLocation.startsWith('/interno/login')) {
+        return redirect(targetLocation.replace('/interno/login', '/login'));
+      }
+      if (targetLocation.startsWith('/interno/registro')) {
+        return redirect(targetLocation.replace('/interno/registro', '/registro'));
+      }
       return redirect(targetLocation);
     }
   }
