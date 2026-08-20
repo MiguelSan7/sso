@@ -11,9 +11,12 @@ let correo = 'juan@correo.com';
 if (token) {
   try {
     const res = await proxyApiRequest(`/interno/registro?token=${encodeURIComponent(token)}`);
-    if (res.ok && res.data) {
-      if (res.data.nombre) nombre = res.data.nombre;
-      if (res.data.correo) correo = res.data.correo;
+    if (res.ok && typeof res.data === 'string') {
+      const match = res.data.match(/Hola (.*?)\. Tu cuenta se creará con (.*?)</);
+      if (match) {
+        nombre = match[1];
+        correo = match[2];
+      }
     }
   } catch {}
 }
@@ -35,13 +38,26 @@ if (Astro.request.method === 'POST') {
       banco: 'Banco Registrado',
       titular,
       privacidad: privacidad ? '1' : '0',
+    }, {
+      'Content-Type': 'application/x-www-form-urlencoded'
     });
 
     if (res.ok) {
       return Astro.redirect('/login');
     } else {
-      error = res.data?.message || 'Error al completar el registro.';
-      codigo = res.data?.codigo || 'ERR-AUTH-400';
+      if (typeof res.data === 'string') {
+        const errorMatch = res.data.match(/<div class="err"[^>]*><span>(.*?)<\/span>(?:<small>(.*?)<\/small>)?<\/div>/);
+        if (errorMatch) {
+          error = errorMatch[1];
+          codigo = errorMatch[2] || 'ERR-AUTH-400';
+        } else {
+          error = 'Error al procesar el formulario en el backend';
+          codigo = 'ERR-AUTH-500';
+        }
+      } else {
+        error = res.data?.message || 'Error al completar el registro.';
+        codigo = res.data?.codigo || 'ERR-AUTH-400';
+      }
     }
   } catch (err: any) {
     error = err.message || 'Error en el servidor';

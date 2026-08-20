@@ -42,8 +42,19 @@ if (Astro.request.method === 'POST') {
         return Astro.redirect(res.headers.location);
       }
     } else {
-      error = typeof res.data === 'object' ? (res.data?.message || res.data?.error) : 'Correo o contraseña incorrectos';
-      codigo = typeof res.data === 'object' ? (res.data?.codigo || res.data?.sso_code) : 'ERR-AUTH-401';
+      if (typeof res.data === 'string') {
+        const errorMatch = res.data.match(/<div class="err"[^>]*><span>(.*?)<\/span>(?:<small>(.*?)<\/small>)?<\/div>/);
+        if (errorMatch) {
+          error = errorMatch[1];
+          codigo = errorMatch[2] || 'ERR-AUTH-400';
+        } else {
+          error = 'Correo o contraseña incorrectos';
+          codigo = 'ERR-AUTH-401';
+        }
+      } else {
+        error = res.data?.message || res.data?.error || 'Correo o contraseña incorrectos';
+        codigo = res.data?.codigo || res.data?.sso_code || 'ERR-AUTH-401';
+      }
     }
   } catch (err: any) {
     error = err.message || 'Error de autenticación';

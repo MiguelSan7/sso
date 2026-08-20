@@ -1,0 +1,28 @@
+---
+import crypto from 'node:crypto';
+
+// 1. Generar PKCE Code Verifier y Challenge
+// Lo dejamos fijo para poder calar el canje manual del token
+const codeVerifier = 'esta_es_una_cadena_secreta_muy_larga_para_pkce_123';
+const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
+
+// 2. Generar State y Nonce aleatorios
+const state = crypto.randomBytes(16).toString('hex');
+const nonce = crypto.randomBytes(16).toString('hex');
+
+// 3. Construir la URL completa de Autorización simulando que somos el "Panel Web"
+const params = new URLSearchParams({
+  client_id: 'sgeb-web-panel',
+  redirect_uri: 'http://localhost:5173/auth/callback',
+  response_type: 'code',
+  scope: 'openid perfil sgeb.api',
+  state,
+  nonce,
+  code_challenge: codeChallenge,
+  code_challenge_method: 'S256',
+  prompt: 'login' // Forzar que pida credenciales
+});
+
+// En una app real, el cliente guardaría el `codeVerifier` en localStorage aquí antes de redirigir.
+return Astro.redirect(`/authorize?${params.toString()}`);
+---

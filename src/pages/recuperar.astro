@@ -14,7 +14,9 @@ if (Astro.request.method === 'POST') {
     const ticketPost = formData.get('ticket')?.toString() || '';
     const correo = formData.get('correo')?.toString() || '';
 
-    await proxyApiRequest('/interno/recuperar', 'POST', { ticket: ticketPost, correo });
+    await proxyApiRequest('/interno/recuperar', 'POST', { ticket: ticketPost, correo }, {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    });
     return Astro.redirect(`/recuperar?ticket=${encodeURIComponent(ticketPost)}&enviado=1`);
   } catch (err: any) {
     error = err.message || 'Error al procesar la solicitud.';

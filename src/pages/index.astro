@@ -1,17 +1,17 @@
 ---
+// Redirección inteligente ("IdP-Initiated Flow")
+// Si un usuario despistado entra a la raíz del proveedor de identidad, 
+// lo aventamos hacia el cliente (el Panel Web) para que inicie el flujo correctamente.
 
+const isDev = import.meta.env.DEV;
+
+if (isDev) {
+  // En local, usamos nuestra propia ruta de pruebas que simula ser el Panel Web
+  return Astro.redirect('/test');
+} else {
+  // En producción, lo mandamos al dominio principal de la aplicación.
+  // El Panel Web detectará que no tiene sesión y armará la URL de /authorize correctamente.
+  const panelUrl = import.meta.env.PUBLIC_PANEL_URL || 'https://sgeb.mediocres.mx';
+  return Astro.redirect(panelUrl);
+}
 ---
-
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
