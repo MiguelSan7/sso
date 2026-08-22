@@ -1,7 +1,23 @@
 import type { APIRoute } from 'astro';
 import { proxyApiRequest } from '../lib/api';
 
+function getCorsHeaders(request: Request) {
+  const origin = request.headers.get('origin') || '*';
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  };
+}
+
 export const ALL: APIRoute = async ({ request }) => {
+  const corsHeaders = getCorsHeaders(request);
+
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: corsHeaders });
+  }
+
   const method = request.method;
   const headers: Record<string, string> = {};
   
@@ -23,6 +39,9 @@ export const ALL: APIRoute = async ({ request }) => {
 
   return new Response(JSON.stringify(res.data), {
     status: res.status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...corsHeaders,
+    },
   });
 };
