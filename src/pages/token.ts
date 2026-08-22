@@ -21,7 +21,7 @@ export const ALL: APIRoute = async ({ request }) => {
         if (contentType.includes('application/x-www-form-urlencoded')) {
           body = Object.fromEntries(new URLSearchParams(text));
         } else {
-          body = JSON.parse(text);
+          try { body = JSON.parse(text); } catch (e) { console.error('Token body JSON parse error:', e); }
         }
       }
     }
@@ -34,16 +34,18 @@ export const ALL: APIRoute = async ({ request }) => {
 
     const res = await proxyApiRequest('/token', request.method, body, headers);
 
-    return new Response(JSON.stringify(res.data), {
-      status: res.status,
+    const payload = res.error ? { error: 'invalid_request', error_description: res.error } : (res.data || {});
+
+    return new Response(JSON.stringify(payload), {
+      status: res.status || 500,
       headers: {
         'Content-Type': 'application/json',
         ...corsHeaders,
       },
     });
   } catch (err: any) {
-    console.error('Error en token proxy:', err);
-    return new Response(JSON.stringify({ error: 'server_error', error_description: err.message }), {
+    console.error('Error fatal en token proxy:', err);
+    return new Response(JSON.stringify({ error: 'server_error', error_description: String(err) }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
     });
