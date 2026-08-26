@@ -14,6 +14,10 @@ export const GET: APIRoute = async ({ request, redirect, cookies }) => {
   const codeChallengeMethod = url.searchParams.get('code_challenge_method') || '';
   const prompt = url.searchParams.get('prompt');
 
+  if (!clientId && !redirectUri) {
+    return redirect('https://mediocres-inc.online');
+  }
+
   // 1. Validar Cliente y URI de redirección registrados
   const cliente = CLIENTES[clientId];
   if (!cliente || !cliente.activo) {
