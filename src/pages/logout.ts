@@ -16,40 +16,20 @@ export const ALL: APIRoute = async ({ request }) => {
   );
 
   const responseHeaders = new Headers();
+
+  // Limpiar explícitamente todas las cookies de sesión en el dominio del SSO
+  responseHeaders.append('Set-Cookie', 'sso_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; HttpOnly; SameSite=Lax');
+  responseHeaders.append('Set-Cookie', 'sgeb_refresh=; Path=/token; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; HttpOnly; SameSite=Lax');
+  responseHeaders.append('Set-Cookie', 'sgeb_dispositivo=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; HttpOnly; SameSite=Lax');
+
   if (res.headers.setCookie) {
-    responseHeaders.set('Set-Cookie', res.headers.setCookie);
+    responseHeaders.append('Set-Cookie', res.headers.setCookie);
   }
 
-  // 1. Si el backend emitió una redirección (ej. post_logout_redirect_uri válida)
-  if (res.headers.location) {
-    responseHeaders.set('Location', res.headers.location);
-    return new Response(null, {
-      status: 302,
-      headers: responseHeaders,
-    });
-  }
-
-  // 2. Si vino un post_logout_redirect_uri en la query
-  const postLogoutRedirect = url.searchParams.get('post_logout_redirect_uri');
-  if (postLogoutRedirect) {
-    responseHeaders.set('Location', postLogoutRedirect);
-    return new Response(null, {
-      status: 302,
-      headers: responseHeaders,
-    });
-  }
-
-  // 3. Si el backend respondió con HTML de pantalla de sesión cerrada
-  if (res.ok && typeof res.data === 'string') {
-    responseHeaders.set('Content-Type', 'text/html; charset=utf-8');
-    return new Response(res.data, {
-      status: 200,
-      headers: responseHeaders,
-    });
-  }
-
-  // 4. Por defecto, mandar a la landing page
-  responseHeaders.set('Location', 'https://mediocres-inc.online');
+  // 1. Si el backend emitió Location o vino post_logout_redirect_uri
+  const targetLocation = res.headers.location || url.searchParams.get('post_logout_redirect_uri') || 'https://mediocres-inc.online/';
+  
+  responseHeaders.set('Location', targetLocation);
   return new Response(null, {
     status: 302,
     headers: responseHeaders,
