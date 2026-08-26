@@ -3,6 +3,11 @@ import Layout from '../layouts/Layout.astro';
 import { proxyApiRequest } from '../lib/api';
 
 const ticket = Astro.url.searchParams.get('ticket') || '';
+
+if (!ticket && Astro.request.method === 'GET') {
+  return Astro.redirect('https://mediocres-inc.online');
+}
+
 let error: string | null = null;
 let codigo: string | null = null;
 let correoVal = '';
