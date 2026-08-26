@@ -4,6 +4,7 @@ import { proxyApiRequest } from '../lib/api';
 
 const ticket = Astro.url.searchParams.get('ticket') || '';
 const correo = Astro.url.searchParams.get('correo') || '';
+const reenviado = Astro.url.searchParams.get('reenviado') === '1';
 
 let error: string | null = null;
 let codigo: string | null = null;
@@ -71,6 +72,12 @@ if (Astro.request.method === 'POST') {
     </p>
   </div>
 
+  {reenviado && (
+    <div class="alert-success" style="background-color: #e6f4ea; color: #137333; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 14px; text-align: center; border: 1px solid #ceead6;">
+      <span>Hemos enviado un nuevo código a tu correo.</span>
+    </div>
+  )}
+
   {error && (
     <div class="alert-error">
       <span>{error}</span>
@@ -109,7 +116,7 @@ if (Astro.request.method === 'POST') {
   </form>
 
   <div class="sso-footer">
-    <a href={`/interno/verificacion/reenviar?ticket=${encodeURIComponent(ticket)}`}>
+    <a href={`/verificacion/reenviar?ticket=${encodeURIComponent(ticket)}`}>
       Reenviar código
     </a>
   </div>
